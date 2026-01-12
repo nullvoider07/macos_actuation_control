@@ -18,11 +18,11 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name mac-control-linux macos_vm_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation-linux macos_actuation_control_cli.py
       - uses: actions/upload-artifact@v4
         with:
           name: linux-binary
-          path: dist/mac-control-linux
+          path: dist/macos-actuation-linux
 
   # Build for macOS (to run ON Mac controlling Mac)
   build-macos:
@@ -33,11 +33,11 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name mac-control-macos macos_vm_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation-macos macos_actuation_control_cli.py
       - uses: actions/upload-artifact@v4
         with:
           name: macos-binary
-          path: dist/mac-control-macos
+          path: dist/macos-actuation-macos
 
   # Build for Windows (to run ON Windows controlling Mac)
   build-windows:
@@ -48,11 +48,11 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name mac-control.exe macos_vm_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_control_cli.py
       - uses: actions/upload-artifact@v4
         with:
           name: windows-binary
-          path: dist/mac-control.exe
+          path: dist/macos-actuation.exe
 
   release:
     needs: [build-linux, build-macos, build-windows]
@@ -66,6 +66,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./assets/linux-binary/mac-control-linux
-            ./assets/macos-binary/mac-control-macos
-            ./assets/windows-binary/mac-control.exe
+            ./assets/linux-binary/macos-actuation-linux
+            ./assets/macos-binary/macos-actuation-macos
+            ./assets/windows-binary/macos-actuation.exe
