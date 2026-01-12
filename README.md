@@ -70,16 +70,19 @@ The macOS VM Control CLI is an intelligent middleware tool designed for Computer
 ### System Requirements
 
 **Server (macOS VM):**
-- macOS 10.12 (Sierra) or later
-- SSH server enabled
-- `cliclick` installed (via Homebrew or manual)
-- Python 3.x (for AppleScript scroll fallback)
-- Accessibility permissions (may be required)
+- **Hardware:** Apple Silicon (M1/M2/M3/M4) recommended for pre-built binaries.
+    - *Note: Intel Macs must run the tool from source (Python).*
+- **OS:** macOS 11.0 (Big Sur) or later.
+- **Dependencies:** - SSH server enabled
+    - `cliclick` installed (via Homebrew or manual)
+    - Accessibility permissions enabled for Terminal/SSH
 
 **Client (Control Machine):**
-- Python 3.7 or later
-- `paramiko` library (SSH client)
-- Network access to macOS VM
+- **For Binary Usage:** - Linux (x64), Windows (x64), or macOS (Apple Silicon).
+    - No Python required.
+- **For Source Usage:**
+    - Python 3.7 or later.
+    - `paramiko` library.
 
 ### Dependencies
 

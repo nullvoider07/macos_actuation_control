@@ -42,7 +42,7 @@ jobs:
           sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
           sudo gem install --no-document fpm
 
-      # 5. Create DEB Package (FIXED: Moved '.' to end)
+      # 5. Create DEB Package
       - name: Create DEB
         run: |
           mkdir -p pkg-root/usr/local/bin
@@ -57,7 +57,7 @@ jobs:
             -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.deb \
             . 
 
-      # 6. Create RPM Package (FIXED: Moved '.' to end)
+      # 6. Create RPM Package
       - name: Create RPM
         run: |
           fpm -s dir -t rpm \
@@ -87,10 +87,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-13    # Intel Mac Runner
-            arch: x64
-          - os: macos-14    # Apple Silicon (M1) Runner
+          - os: macos-14
             arch: arm64
+          - os: macos-15
+            arch: x64 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
