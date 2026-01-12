@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  # ------------------------------------------------------------------
+# ------------------------------------------------------------------
   # JOB 1: LINUX BUILD (x64)
   # Produces: .tar.gz, .deb, .rpm
   # ------------------------------------------------------------------
@@ -35,15 +35,14 @@ jobs:
         run: |
           tar -czvf macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.tar.gz -C dist macos-actuation
 
-      # 4. Install Packaging Tools (FPM + RPM)
-      # ADDED 'rpm' HERE: Required for fpm to build .rpm files
+      # 4. Install Packaging Tools
       - name: Install FPM
         run: |
           sudo apt-get update
           sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
           sudo gem install --no-document fpm
 
-      # 5. Create DEB Package (Debian/Ubuntu)
+      # 5. Create DEB Package (FIXED: Moved '.' to end)
       - name: Create DEB
         run: |
           mkdir -p pkg-root/usr/local/bin
@@ -54,10 +53,11 @@ jobs:
             -v ${{ steps.version.outputs.VERSION }} \
             --architecture amd64 \
             --description "macOS Actuation Controller CLI" \
-            -C pkg-root . \
-            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.deb
+            -C pkg-root \
+            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.deb \
+            . 
 
-      # 6. Create RPM Package (RedHat/CentOS)
+      # 6. Create RPM Package (FIXED: Moved '.' to end)
       - name: Create RPM
         run: |
           fpm -s dir -t rpm \
@@ -65,8 +65,9 @@ jobs:
             -v ${{ steps.version.outputs.VERSION }} \
             --architecture x86_64 \
             --description "macOS Actuation Controller CLI" \
-            -C pkg-root . \
-            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.rpm
+            -C pkg-root \
+            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.rpm \
+            .
 
       - uses: actions/upload-artifact@v4
         with:
