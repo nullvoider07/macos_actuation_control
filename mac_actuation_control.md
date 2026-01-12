@@ -197,7 +197,7 @@ If you prefer, download the standalone binary for your OS directly from the [Rel
 ### 1. Interactive Mode (Default)
 
 ```bash
-python3 macos_actuation_control_cli.py --username agentuser --host localhost --port 2222
+python3 macos_actuation_control.py --username agentuser --host localhost --port 2222
 ```
 
 **Features:**
@@ -226,7 +226,7 @@ macOS> exit
 ### 2. Single Command Mode
 
 ```bash
-python3 macos_actuation_control_cli.py -c "960 540 right" --username agentuser --host localhost --port 2222
+python3 macos_actuation_control.py -c "960 540 right" --username agentuser --host localhost --port 2222
 ```
 
 **Use Cases:**
@@ -237,7 +237,7 @@ python3 macos_actuation_control_cli.py -c "960 540 right" --username agentuser -
 ### 3. Batch Mode (File Execution)
 
 ```bash
-python3 macos_actuation_control_cli.py -f commands.txt -d 0.5 --username agentuser --host localhost --port 2222
+python3 macos_actuation_control.py -f commands.txt -d 0.5 --username agentuser --host localhost --port 2222
 ```
 
 **File Format:** (`commands.txt`)
@@ -639,7 +639,7 @@ press #+4
 
 **Execute:**
 ```bash
-python3 macos_actuation_control_cli.py -f workflow.txt -d 1.0 --username agentuser
+python3 macos_actuation_control.py -f workflow.txt -d 1.0 --username agentuser
 ```
 
 ---
@@ -735,7 +735,7 @@ Enable verbose output for troubleshooting:
 ```bash
 # Add -m verbose flag to cliclick commands (modify script if needed)
 # Or run with Python debugging:
-python3 -u macos_actuation_control_cli.py -c "test command" --username user
+python3 -u macos_actuation_control.py -c "test command" --username user
 ```
 
 ### Getting Help
