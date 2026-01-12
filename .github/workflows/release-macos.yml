@@ -1,15 +1,18 @@
-name: Release macOS Actuation Controller
+name: Release macOS Actuation Control
 
 on:
   push:
     tags:
-      - 'mac-v*' # Only triggers on tags like mac-v1.0
+      - 'mac-v*'
 
 permissions:
   contents: write
 
 jobs:
-  # Build for Linux (to run ON Linux controlling Mac)
+  # ------------------------------------------------------------------
+  # JOB 1: LINUX BUILD (x64)
+  # Produces: macos-actuation-linux-x64.tar.gz
+  # ------------------------------------------------------------------
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -18,28 +21,24 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation-linux macos_actuation_control.py
+      
+      - name: Build Binary
+        run: pyinstaller --onefile --name macos-actuation-linux-x64 macos_actuation_control.py
+        
+      - name: Create Tar Archive
+        run: |
+          cd dist
+          tar -czvf macos-actuation-linux-x64.tar.gz macos-actuation-linux-x64
+          
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-binary
-          path: dist/macos-actuation-linux
+          name: linux-assets
+          path: dist/*.tar.gz
 
-  # Build for macOS (to run ON Mac controlling Mac)
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-      - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation-macos macos_actuation_control.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos-binary
-          path: dist/macos-actuation-macos
-
-  # Build for Windows (to run ON Windows controlling Mac)
+  # ------------------------------------------------------------------
+  # JOB 2: WINDOWS BUILD (x64)
+  # Produces: macos-actuation-win-x64.zip
+  # ------------------------------------------------------------------
   build-windows:
     runs-on: windows-latest
     steps:
@@ -48,24 +47,76 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_control.py
+      
+      - name: Build Binary
+        run: pyinstaller --onefile --name macos-actuation-win-x64.exe macos_actuation_control.py
+        
+      - name: Create Zip Archive
+        run: |
+          cd dist
+          Compress-Archive -Path macos-actuation-win-x64.exe -DestinationPath macos-actuation-win-x64.zip
+          
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-binary
-          path: dist/macos-actuation.exe
+          name: windows-assets
+          path: dist/*.zip
 
+  # ------------------------------------------------------------------
+  # JOB 3: MACOS MATRIX BUILD (Intel x64 & Apple Silicon ARM64)
+  # Produces: 
+  #   - macos-actuation-osx-x64.tar.gz (For Intel Macs)
+  #   - macos-actuation-osx-arm64.tar.gz (For M1/M2/M3 Macs)
+  # ------------------------------------------------------------------
+  build-macos:
+    name: build-macos-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-13    # Intel Mac Runner
+            arch: x64
+          - os: macos-14    # Apple Silicon (M1) Runner
+            arch: arm64
+            
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - run: pip install pyinstaller paramiko
+      
+      - name: Build Binary
+        run: pyinstaller --onefile --name macos-actuation-osx-${{ matrix.arch }} macos_actuation_control.py
+        
+      - name: Create Tar Archive
+        run: |
+          cd dist
+          tar -czvf macos-actuation-osx-${{ matrix.arch }}.tar.gz macos-actuation-osx-${{ matrix.arch }}
+          
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-assets-${{ matrix.arch }}
+          path: dist/*.tar.gz
+
+  # ------------------------------------------------------------------
+  # JOB 4: RELEASE (Combines everything)
+  # ------------------------------------------------------------------
   release:
-    needs: [build-linux, build-macos, build-windows]
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # Download all artifacts from previous jobs
       - uses: actions/download-artifact@v4
         with:
           path: ./assets
+          merge-multiple: true
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            ./assets/linux-binary/macos-actuation-linux
-            ./assets/macos-binary/macos-actuation-macos
-            ./assets/windows-binary/macos-actuation.exe
+            ./assets/*.tar.gz
+            ./assets/*.zip
