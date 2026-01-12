@@ -1,10 +1,4 @@
-# macOS Actuation Control CLI - Complete Documentation
-
-**Version:** 1.0  
-**Last Updated:** January 2026  
-**Author:** AI-Powered Development Team
-
----
+# macOS Actuation Control CLI - Documentation
 
 ## Table of Contents
 
