@@ -1,4 +1,4 @@
-name: Release macOS Actuation Control
+name: Release macOS Actuation Control (Pro)
 
 on:
   push:
@@ -11,61 +11,76 @@ permissions:
 jobs:
   # ------------------------------------------------------------------
   # JOB 1: LINUX BUILD (x64)
-  # Produces: macos-actuation-linux-x64.tar.gz
+  # Produces: .tar.gz, .deb, .rpm
   # ------------------------------------------------------------------
-  build-linux:
+  build-linux-x64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
+        with: { python-version: '3.13' }
       - run: pip install pyinstaller paramiko
-      
+
+      # 1. Build the Binary
+      # Note: I am using 'macos_vm_control_cli.py' based on your uploaded files.
+      # If your file is named 'macos_actuation_control.py', please update the line below.
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation-linux-x64 macos_actuation_control.py
-        
-      - name: Create Tar Archive
+        run: pyinstaller --onefile --name macos-actuation macos_vm_control_cli.py
+
+      # 2. Prepare Version Number (Strip 'mac-v' from tag)
+      - name: Get Version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#mac-v}" >> $GITHUB_OUTPUT
+
+      # 3. Create TAR.GZ Archive
+      - name: Create Tarball
         run: |
-          cd dist
-          tar -czvf macos-actuation-linux-x64.tar.gz macos-actuation-linux-x64
+          tar -czvf macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.tar.gz -C dist macos-actuation
+
+      # 4. Install Packaging Tools (FPM)
+      - name: Install FPM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential
+          sudo gem install --no-document fpm
+
+      # 5. Create DEB Package (Debian/Ubuntu)
+      - name: Create DEB
+        run: |
+          # Create a fake install structure
+          mkdir -p pkg-root/usr/local/bin
+          cp dist/macos-actuation pkg-root/usr/local/bin/
           
+          fpm -s dir -t deb \
+            -n macos-actuation \
+            -v ${{ steps.version.outputs.VERSION }} \
+            --architecture amd64 \
+            --description "macOS Actuation Controller CLI" \
+            -C pkg-root . \
+            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.deb
+
+      # 6. Create RPM Package (RedHat/CentOS)
+      - name: Create RPM
+        run: |
+          fpm -s dir -t rpm \
+            -n macos-actuation \
+            -v ${{ steps.version.outputs.VERSION }} \
+            --architecture x86_64 \
+            --description "macOS Actuation Controller CLI" \
+            -C pkg-root . \
+            -p macos-actuation-${{ steps.version.outputs.VERSION }}-linux-x64.rpm
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-assets
-          path: dist/*.tar.gz
+          path: |
+            *.tar.gz
+            *.deb
+            *.rpm
 
   # ------------------------------------------------------------------
-  # JOB 2: WINDOWS BUILD (x64)
-  # Produces: macos-actuation-win-x64.zip
-  # ------------------------------------------------------------------
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-      - run: pip install pyinstaller paramiko
-      
-      - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation-win-x64.exe macos_actuation_control.py
-        
-      - name: Create Zip Archive
-        run: |
-          cd dist
-          Compress-Archive -Path macos-actuation-win-x64.exe -DestinationPath macos-actuation-win-x64.zip
-          
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-assets
-          path: dist/*.zip
-
-  # ------------------------------------------------------------------
-  # JOB 3: MACOS MATRIX BUILD (Intel x64 & Apple Silicon ARM64)
-  # Produces: 
-  #   - macos-actuation-osx-x64.tar.gz (For Intel Macs)
-  #   - macos-actuation-osx-arm64.tar.gz (For M1/M2/M3 Macs)
+  # JOB 2: MACOS MATRIX BUILD (Intel & Apple Silicon)
+  # Produces: .tar.gz, .pkg
   # ------------------------------------------------------------------
   build-macos:
     name: build-macos-${{ matrix.arch }}
@@ -77,32 +92,78 @@ jobs:
             arch: x64
           - os: macos-14    # Apple Silicon (M1) Runner
             arch: arm64
-            
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
+        with: { python-version: '3.13' }
       - run: pip install pyinstaller paramiko
-      
+
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation-osx-${{ matrix.arch }} macos_actuation_control.py
-        
-      - name: Create Tar Archive
+        run: pyinstaller --onefile --name macos-actuation macos_vm_control_cli.py
+
+      - name: Get Version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#mac-v}" >> $GITHUB_OUTPUT
+
+      - name: Create Tarball
         run: |
-          cd dist
-          tar -czvf macos-actuation-osx-${{ matrix.arch }}.tar.gz macos-actuation-osx-${{ matrix.arch }}
+          tar -czvf macos-actuation-${{ steps.version.outputs.VERSION }}-osx-${{ matrix.arch }}.tar.gz -C dist macos-actuation
+
+      - name: Create PKG Installer
+        run: |
+          # Structure for /usr/local/bin
+          mkdir -p pkg-root/usr/local/bin
+          cp dist/macos-actuation pkg-root/usr/local/bin/
           
+          # Build PKG
+          pkgbuild --root pkg-root \
+            --identifier com.github.macos-actuation \
+            --version ${{ steps.version.outputs.VERSION }} \
+            --install-location / \
+            macos-actuation-${{ steps.version.outputs.VERSION }}-osx-${{ matrix.arch }}.pkg
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos-assets-${{ matrix.arch }}
-          path: dist/*.tar.gz
+          path: |
+            *.tar.gz
+            *.pkg
 
   # ------------------------------------------------------------------
-  # JOB 4: RELEASE (Combines everything)
+  # JOB 3: WINDOWS BUILD (x64)
+  # Produces: .zip
+  # ------------------------------------------------------------------
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.13' }
+      - run: pip install pyinstaller paramiko
+
+      - name: Build Binary
+        run: pyinstaller --onefile --name macos-actuation.exe macos_vm_control_cli.py
+      
+      - name: Get Version
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#mac-v}" >> $GITHUB_OUTPUT
+
+      - name: Create Zip Archive
+        run: |
+          Compress-Archive -Path dist/macos-actuation.exe -DestinationPath macos-actuation-${{ steps.version.outputs.VERSION }}-win-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-assets
+          path: |
+            *.zip
+
+  # ------------------------------------------------------------------
+  # JOB 4: RELEASE
   # ------------------------------------------------------------------
   release:
-    needs: [build-linux, build-windows, build-macos]
+    needs: [build-linux-x64, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,6 +178,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            ./assets/*.tar.gz
-            ./assets/*.zip
+          files: ./assets/*
