@@ -1,0 +1,71 @@
+name: Release macOS Actuation Controller
+
+on:
+  push:
+    tags:
+      - 'mac-v*' # Only triggers on tags like mac-v1.0
+
+permissions:
+  contents: write
+
+jobs:
+  # Build for Linux (to run ON Linux controlling Mac)
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - run: pip install pyinstaller paramiko
+      - run: pyinstaller --onefile --name mac-control-linux macos_vm_control_cli.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: dist/mac-control-linux
+
+  # Build for macOS (to run ON Mac controlling Mac)
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - run: pip install pyinstaller paramiko
+      - run: pyinstaller --onefile --name mac-control-macos macos_vm_control_cli.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-binary
+          path: dist/mac-control-macos
+
+  # Build for Windows (to run ON Windows controlling Mac)
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - run: pip install pyinstaller paramiko
+      - run: pyinstaller --onefile --name mac-control.exe macos_vm_control_cli.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: dist/mac-control.exe
+
+  release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./assets
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./assets/linux-binary/mac-control-linux
+            ./assets/macos-binary/mac-control-macos
+            ./assets/windows-binary/mac-control.exe
