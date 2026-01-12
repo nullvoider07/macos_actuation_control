@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation-linux macos_actuation_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation-linux macos_actuation_control.py
       - uses: actions/upload-artifact@v4
         with:
           name: linux-binary
@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation-macos macos_actuation_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation-macos macos_actuation_control.py
       - uses: actions/upload-artifact@v4
         with:
           name: macos-binary
@@ -48,7 +48,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install pyinstaller paramiko
-      - run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_control_cli.py
+      - run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_control.py
       - uses: actions/upload-artifact@v4
         with:
           name: windows-binary
