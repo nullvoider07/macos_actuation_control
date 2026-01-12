@@ -1,4 +1,4 @@
-name: Release macOS Actuation Control (Pro)
+name: Release macOS Actuation Control
 
 on:
   push:
@@ -21,13 +21,11 @@ jobs:
         with: { python-version: '3.13' }
       - run: pip install pyinstaller paramiko
 
-      # 1. Build the Binary
-      # Note: I am using 'macos_actuation_controlmacos_actuation.py' based on your uploaded files.
-      # If your file is named 'macos_actuation_control.py', please update the line below.
+      # 1. Build the Binary (FIXED FILENAME HERE)
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation macos_actuation_controlmacos_actuation.py
+        run: pyinstaller --onefile --name macos-actuation macos_actuation_control.py
 
-      # 2. Prepare Version Number (Strip 'mac-v' from tag)
+      # 2. Prepare Version Number
       - name: Get Version
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#mac-v}" >> $GITHUB_OUTPUT
@@ -47,7 +45,6 @@ jobs:
       # 5. Create DEB Package (Debian/Ubuntu)
       - name: Create DEB
         run: |
-          # Create a fake install structure
           mkdir -p pkg-root/usr/local/bin
           cp dist/macos-actuation pkg-root/usr/local/bin/
           
@@ -98,8 +95,9 @@ jobs:
         with: { python-version: '3.13' }
       - run: pip install pyinstaller paramiko
 
+      # FIXED FILENAME HERE
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation macos_actuation_controlmacos_actuation.py
+        run: pyinstaller --onefile --name macos-actuation macos_actuation_control.py
 
       - name: Get Version
         id: version
@@ -111,11 +109,9 @@ jobs:
 
       - name: Create PKG Installer
         run: |
-          # Structure for /usr/local/bin
           mkdir -p pkg-root/usr/local/bin
           cp dist/macos-actuation pkg-root/usr/local/bin/
           
-          # Build PKG
           pkgbuild --root pkg-root \
             --identifier com.github.macos-actuation \
             --version ${{ steps.version.outputs.VERSION }} \
@@ -141,8 +137,9 @@ jobs:
         with: { python-version: '3.13' }
       - run: pip install pyinstaller paramiko
 
+      # FIXED FILENAME HERE
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_controlmacos_actuation.py
+        run: pyinstaller --onefile --name macos-actuation.exe macos_actuation_control.py
       
       - name: Get Version
         id: version
@@ -168,7 +165,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Download all artifacts from previous jobs
       - uses: actions/download-artifact@v4
         with:
           path: ./assets
