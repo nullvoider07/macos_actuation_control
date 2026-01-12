@@ -57,6 +57,12 @@ tar -xzf "$FILE_NAME"
 mv "$BINARY_NAME" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
+# macOS Specific: Remove Quarantine Attribute
+if [[ "$OS_TYPE" == "osx" ]]; then
+    echo "Removing macOS quarantine attribute..."
+    xattr -d com.apple.quarantine "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null || true
+fi
+
 # Clean up
 rm "$FILE_NAME"
 
