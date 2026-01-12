@@ -3,6 +3,7 @@
 # Configuration
 REPO="nullvoider07/macos_actuation_control"
 BINARY_NAME="macos-actuation"
+INSTALL_DIR="$HOME/.local/bin"
 
 # Detect OS
 OS="$(uname -s)"
@@ -37,7 +38,6 @@ VERSION=${LATEST_TAG#mac-v}
 echo "Latest Version: ${VERSION}"
 
 # Construct Download URL
-# Matches the naming convention from your YAML: macos-actuation-{VERSION}-{OS}-{ARCH}.tar.gz
 FILE_NAME="macos-actuation-${VERSION}-${OS_TYPE}-${ARCH_TYPE}.tar.gz"
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/$FILE_NAME"
 
@@ -50,18 +50,33 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Install
-echo "Installing..."
+# Install to ~/.local/bin
+echo "Installing to $INSTALL_DIR..."
+mkdir -p "$INSTALL_DIR"
 tar -xzf "$FILE_NAME"
-chmod +x "$BINARY_NAME"
+mv "$BINARY_NAME" "$INSTALL_DIR/"
+chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
-# Move to /usr/local/bin (requires sudo)
-echo "Moving binary to /usr/local/bin (requires sudo)..."
-if sudo mv "$BINARY_NAME" /usr/local/bin/$BINARY_NAME; then
-    echo "✅ Installation complete! You can now run '$BINARY_NAME' from anywhere."
-else
-    echo "❌ Failed to move binary. It is located in the current directory."
-fi
-
-# Cleanup
+# Clean up
 rm "$FILE_NAME"
+
+# Update PATH if needed
+SHELL_CONFIG=""
+case "$SHELL" in
+    */zsh) SHELL_CONFIG="$HOME/.zshrc" ;;
+    */bash) SHELL_CONFIG="$HOME/.bashrc" ;;
+    *) SHELL_CONFIG="$HOME/.profile" ;;
+esac
+
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo "Adding $INSTALL_DIR to PATH in $SHELL_CONFIG..."
+    echo "" >> "$SHELL_CONFIG"
+    echo "# macOS Actuation Control CLI" >> "$SHELL_CONFIG"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
+    
+    echo "✅ Installation complete!"
+    echo "⚠️  Please run the following command to apply changes:"
+    echo "   source $SHELL_CONFIG"
+else
+    echo "✅ Installation complete! (PATH is already configured)"
+fi
