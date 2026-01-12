@@ -1,4 +1,4 @@
-# macOS VM Control CLI - Complete Documentation
+# macOS Actuation Control CLI - Complete Documentation
 
 **Version:** 1.0  
 **Last Updated:** January 2026  
@@ -173,11 +173,11 @@ pip install paramiko
 
 ```bash
 # Download the script
-curl -O https://your-repo/macos_vm_control_cli.py
-chmod +x macos_vm_control_cli.py
+curl -O https://your-repo/macos_actuation_control_cli.py
+chmod +x macos_actuation_control_cli.py
 
 # Test connection
-python3 macos_vm_control_cli.py --username yourusername --host localhost --port 2222
+python3 macos_actuation_control_cli.py --username yourusername --host localhost --port 2222
 ```
 
 ---
@@ -187,7 +187,7 @@ python3 macos_vm_control_cli.py --username yourusername --host localhost --port 
 ### 1. Interactive Mode (Default)
 
 ```bash
-python3 macos_vm_control_cli.py --username agentuser --host localhost --port 2222
+python3 macos_actuation_control_cli.py --username agentuser --host localhost --port 2222
 ```
 
 **Features:**
@@ -216,7 +216,7 @@ macOS> exit
 ### 2. Single Command Mode
 
 ```bash
-python3 macos_vm_control_cli.py -c "960 540 right" --username agentuser --host localhost --port 2222
+python3 macos_actuation_control_cli.py -c "960 540 right" --username agentuser --host localhost --port 2222
 ```
 
 **Use Cases:**
@@ -227,7 +227,7 @@ python3 macos_vm_control_cli.py -c "960 540 right" --username agentuser --host l
 ### 3. Batch Mode (File Execution)
 
 ```bash
-python3 macos_vm_control_cli.py -f commands.txt -d 0.5 --username agentuser --host localhost --port 2222
+python3 macos_actuation_control_cli.py -f commands.txt -d 0.5 --username agentuser --host localhost --port 2222
 ```
 
 **File Format:** (`commands.txt`)
@@ -629,7 +629,7 @@ press #+4
 
 **Execute:**
 ```bash
-python3 macos_vm_control_cli.py -f workflow.txt -d 1.0 --username agentuser
+python3 macos_actuation_control_cli.py -f workflow.txt -d 1.0 --username agentuser
 ```
 
 ---
@@ -725,7 +725,7 @@ Enable verbose output for troubleshooting:
 ```bash
 # Add -m verbose flag to cliclick commands (modify script if needed)
 # Or run with Python debugging:
-python3 -u macos_vm_control_cli.py -c "test command" --username user
+python3 -u macos_actuation_control_cli.py -c "test command" --username user
 ```
 
 ### Getting Help
