@@ -172,16 +172,23 @@ For VMs like UTM, QEMU, or VirtualBox:
 pip install paramiko
 ```
 
-### Step 5: Download & Test CLI Tool
+### Step 5: Download & Install
 
-```bash
-# Download the script
-curl -O https://your-repo/macos_actuation_control_cli.py
-chmod +x macos_actuation_control_cli.py
+**Option A: One-Line Installer (Recommended)**
+This automatically detects your OS, downloads the latest binary, and adds it to your PATH.
 
-# Test connection
-python3 macos_actuation_control_cli.py --username yourusername --host localhost --port 2222
-```
+* **Linux & macOS:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/nullvoider07/macos_actuation_control/main/install/install.sh | bash
+    ```
+
+* **Windows (PowerShell):**
+    ```powershell
+    irm https://raw.githubusercontent.com/nullvoider07/macos_actuation_control/main/install/install.ps1 | iex
+    ```
+
+**Option B: Manual Download**
+If you prefer, download the standalone binary for your OS directly from the [Releases Page](https://github.com/nullvoider07/macos_actuation_control/releases).
 
 ---
 
