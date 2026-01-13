@@ -817,4 +817,4 @@ COMMON SHORTCUTS
 
 This macOS actuation CLI tool was built from scratch through iterative testing and refinement. Every command, every feature, and every line of code was crafted to solve real automation challenges for Computer Use Agents.
 
-If you find this tool useful, encounter bugs, or have feature requests, feel free to reach out directly via [X (formerly Twitter)](https://x.com/mastermonk12).
+If you find this tool useful, encounter bugs, or have feature requests, feel free to reach out directly via [X (formerly Twitter)](https://x.com/nullvoider07).
