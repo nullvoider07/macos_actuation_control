@@ -23,7 +23,7 @@ jobs:
 
       # 1. Build the Binary
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation script/macos_actuation_control.py
+        run: pyinstaller --onefile --name macos-actuation scripts/macos_actuation_control.py
 
       # 2. Prepare Version Number
       - name: Get Version
@@ -99,7 +99,7 @@ jobs:
 
       # FIXED FILENAME HERE
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation script/macos_actuation_control.py
+        run: pyinstaller --onefile --name macos-actuation scripts/macos_actuation_control.py
 
       - name: Get Version
         id: version
@@ -141,7 +141,7 @@ jobs:
 
       # FIXED FILENAME HERE
       - name: Build Binary
-        run: pyinstaller --onefile --name macos-actuation.exe script/macos_actuation_control.py
+        run: pyinstaller --onefile --name macos-actuation.exe scripts/macos_actuation_control.py
       
       - name: Get Version
         id: version
