@@ -7,11 +7,24 @@ Uses cliclick for mouse control and osascript/cliclick for keyboard control
 
 import sys
 import re
+import os
 import time
 import paramiko
 import getpass
+import threading
+import requests
+import platform
+import shutil
+import tempfile
+import stat
+import json
+import zipfile
+import tarfile
+from pathlib import Path
 from typing import Optional, Tuple, List
 
+__version__ = "1.0.0"
+REPO = "nullvoider07/macos_actuation_control"
 
 class MacOSVMController:
     """Smart CLI tool for controlling macOS VM via SSH"""
@@ -129,6 +142,8 @@ class MacOSVMController:
     # Find cliclick executable on remote macOS VM
     def _find_cliclick(self) -> Optional[str]:
         """Find cliclick executable"""
+        if self.ssh_client is None:
+            return None
         known_path = '/usr/local/bin/cliclick'
         if self._test_cliclick(known_path):
             return known_path
@@ -160,6 +175,8 @@ class MacOSVMController:
     # Test if cliclick exists and is executable
     def _test_cliclick(self, path: str) -> bool:
         """Test if cliclick exists and is executable"""
+        if self.ssh_client is None:
+            return False
         try:
             stdin, stdout, stderr = self.ssh_client.exec_command(f'test -x {path} && echo OK')
             return stdout.read().decode().strip() == 'OK'
@@ -173,6 +190,25 @@ class MacOSVMController:
             self.ssh_client.close()
             self.connected = False
             print("[*] Disconnected from macOS VM")
+    
+    def _monitor_connection(self):
+        """Background thread to monitor SSH connection health"""
+        while self.connected:
+            try:
+                if self.ssh_client:
+                    transport = self.ssh_client.get_transport()
+                    if transport is None or not transport.is_active():
+                        raise Exception("Transport closed")    
+                    transport.send_ignore()
+                time.sleep(3)
+                
+            except Exception:
+                if self.connected:
+                    print("\n\n[!] Connection to macOS VM lost unexpectedly.")
+                    print("[*] Shutting down...")
+                    self.connected = False
+                    os._exit(1)
+                break
     
     # Detect command type
     def detect_command_type(self, command: str) -> Tuple[str, str]:
@@ -478,7 +514,7 @@ class MacOSVMController:
     
     def execute_command(self, command: str) -> bool:
         """Execute command on macOS VM"""
-        if not self.connected:
+        if not self.connected or self.ssh_client is None:
             print("[✗] Not connected to VM")
             return False
         
@@ -565,6 +601,9 @@ class MacOSVMController:
         print("  Special:  exit, quit           (disconnect)")
         print("  Special:  help                 (show detailed help)")
         print("="*70 + "\n")
+
+        monitor_thread = threading.Thread(target=self._monitor_connection, daemon=True)
+        monitor_thread.start()
         
         while self.connected:
             try:
@@ -674,10 +713,153 @@ class MacOSVMController:
         """
         print(help_text)
 
+# Version display
+def show_version():
+    """Show version information"""
+    print("=" * 60)
+    print(f"macOS Actuation Control v{__version__}")
+    print("=" * 60)
+    print(f"  * OS:          {platform.system()} {platform.release()}")
+    print(f"  * Architecture: {platform.machine()}")
+    print(f"  * Python:      {sys.version.split()[0]}")
+    print(f"  * Repository:  https://github.com/{REPO}")
+    print("=" * 60)
+
+# Update mechanism
+def update_tool(check_only: bool = False):
+    """Check for updates and install the latest version"""
+    print("[*] Checking for updates...")
+    print(f"    Current version: v{__version__}")
+    
+    try:
+        # 1. Get latest release from GitHub
+        release_url = f"https://api.github.com/repos/{REPO}/releases/latest"
+        response = requests.get(release_url, timeout=10)
+        response.raise_for_status()
+        
+        latest_release = response.json()
+        latest_tag = latest_release['tag_name']
+        latest_version = latest_tag.lstrip('v')
+        
+        print(f"    Latest version:  v{latest_version}")
+        
+        # 2. Compare versions
+        if latest_version == __version__:
+            print("[✓] You already have the latest version!")
+            return
+        
+        print(f"\n[!] New version available: v{latest_version}")
+        
+        if check_only:
+            print("    Run 'macos-actuation update' to install.")
+            return
+
+        # 3. Confirm update
+        confirm = input("\nDo you want to update now? [y/N] ").strip().lower()
+        if confirm != 'y':
+            print("[*] Update cancelled.")
+            return
+
+        # 4. Detect platform/arch to find correct asset
+        os_type = platform.system().lower()
+        machine = platform.machine().lower()
+        
+        # Map to your asset naming convention
+        if os_type == 'darwin': os_name = 'macos'
+        elif os_type == 'linux': os_name = 'linux'
+        elif os_type == 'windows': os_name = 'win'
+        else:
+            print(f"[✗] Unsupported OS: {os_type}")
+            return
+
+        if machine in ['x86_64', 'amd64']: arch = 'x64'
+        elif machine in ['arm64', 'aarch64']: arch = 'arm64'
+        else:
+            print(f"[✗] Unsupported architecture: {machine}")
+            return
+
+        # Construct expected filename
+        ext = 'zip' if os_name == 'win' else 'tar.gz'
+        file_name = f"macos-actuation-{latest_version}-{os_name}-{arch}.{ext}"
+        
+        download_url = f"https://github.com/{REPO}/releases/download/{latest_tag}/{file_name}"
+        print(f"\n[*] Downloading {file_name}...")
+
+        # 5. Download
+        download_response = requests.get(download_url, stream=True, timeout=30)
+        download_response.raise_for_status()
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_file = os.path.join(temp_dir, file_name)
+        
+        with open(temp_file, 'wb') as f:
+            for chunk in download_response.iter_content(chunk_size=8192):
+                f.write(chunk)
+                
+        # 6. Extract
+        print("[*] Installing update...")
+        if file_name.endswith('.zip'):
+            with zipfile.ZipFile(temp_file, 'r') as zf:
+                zf.extractall(temp_dir)
+        else:
+            with tarfile.open(temp_file, 'r:gz') as tf:
+                tf.extractall(temp_dir)
+
+        # 7. Replace Binary
+        binary_name = 'macos-actuation.exe' if os_name == 'win' else 'macos-actuation'
+        extracted_bin = os.path.join(temp_dir, binary_name)
+        
+        if not os.path.exists(extracted_bin):
+            extracted_bin = os.path.join(temp_dir, 'bin', binary_name)
+        
+        if not os.path.exists(extracted_bin):
+            print(f"[✗] Error: Could not find '{binary_name}' in the update archive.")
+            shutil.rmtree(temp_dir)
+            return
+
+        current_exe = sys.executable if getattr(sys, 'frozen', False) else __file__
+        current_exe_path = Path(current_exe).resolve()
+
+        try:
+            if os_name == 'win':
+                old_exe = current_exe_path.with_suffix('.old')
+                if old_exe.exists():
+                    old_exe.unlink()
+                current_exe_path.rename(old_exe)
+            
+            shutil.copy2(extracted_bin, current_exe_path)
+            
+            if os_name != 'win':
+                st = os.stat(current_exe_path)
+                os.chmod(current_exe_path, st.st_mode | stat.S_IEXEC)
+                
+            print(f"\n[✓] Successfully updated to v{latest_version}!")
+            print("[*] Please restart the tool.")
+            
+        except Exception as e:
+            print(f"[✗] Failed to replace binary: {e}")
+            if os_name == 'win':
+                print("[!] Note: On Windows, you might need to close the tool manually to update.")
+                
+        finally:
+            shutil.rmtree(temp_dir)
+
+    except Exception as e:
+        print(f"[✗] Update failed: {e}")
+
 # Main entry point
 def main():
     """Main entry point"""
     import argparse
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'version':
+            show_version()
+            sys.exit(0)
+        elif sys.argv[1] == 'update':
+            check_only = '--check-only' in sys.argv
+            update_tool(check_only=check_only)
+            sys.exit(0)
     
     parser = argparse.ArgumentParser(description='macOS VM Control CLI')
     parser.add_argument('-f', '--file', help='Execute commands from file (batch mode)')

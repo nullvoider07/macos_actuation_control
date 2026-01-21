@@ -2,6 +2,20 @@
 $Repo = "nullvoider07/macos_actuation_control"
 $BinaryName = "macos-actuation.exe"
 
+if (Get-Command "macos-actuation" -ErrorAction SilentlyContinue) {
+    Write-Host "⚠️  macos-actuation is already installed." -ForegroundColor Yellow
+    Write-Host "💡 To update to the latest version, simply run:" -ForegroundColor Cyan
+    Write-Host "   macos-actuation update" -ForegroundColor White
+    Write-Host ""
+    
+    $Confirmation = Read-Host "Do you still want to force a reinstall? [y/N]"
+    if ($Confirmation -notmatch "^[Yy]$") {
+        Write-Host "Installation cancelled." -ForegroundColor Gray
+        exit 0
+    }
+    Write-Host "Proceeding with reinstall..." -ForegroundColor Gray
+}
+
 Write-Host "Checking for latest version..." -ForegroundColor Cyan
 
 # 1. Get Latest Tag from GitHub API
@@ -20,12 +34,11 @@ if ([string]::IsNullOrWhiteSpace($TagName)) {
     exit 1
 }
 
-# Extract Version (Remove 'mac-v' prefix)
+# Extract Version
 $Version = $TagName -replace "mac-v", ""
 Write-Host "Latest Version: $Version" -ForegroundColor Green
 
 # 2. Construct Download URL
-# Pattern: macos-actuation-{VERSION}-win-x64.zip
 $ZipName = "macos-actuation-$Version-win-x64.zip"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$TagName/$ZipName"
 
@@ -41,7 +54,6 @@ catch {
 }
 
 # 4. Install
-# We will install to a local folder in AppData and add to PATH
 $InstallDir = "$env:LOCALAPPDATA\Programs\macos-actuation"
 if (!(Test-Path -Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir | Out-Null
@@ -50,14 +62,14 @@ if (!(Test-Path -Path $InstallDir)) {
 Write-Host "Extracting to $InstallDir..." -ForegroundColor Cyan
 Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
 
-# 5. Verify Binary Exists (Using the previously unused variable)
+# 5. Verify Binary Exists
 $BinaryPath = Join-Path -Path $InstallDir -ChildPath $BinaryName
 if (!(Test-Path -Path $BinaryPath)) {
     Write-Warning "Installation finished, but could not find '$BinaryName' in the extraction folder."
     Write-Warning "Please check the contents of: $InstallDir"
 }
 
-# 6. Add to PATH (User Scope)
+# 6. Add to PATH
 $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($UserPath -notlike "*$InstallDir*") {
     Write-Host "Adding to PATH..." -ForegroundColor Yellow
