@@ -1,6 +1,6 @@
 # macOS Actuation Control CLI - Documentation
 
-**Version:** 1.0.0 
+**Version:** 1.0.0  
 **Last Updated:** January 2026  
 **Developer:** Kartik (NullVoider)
 
@@ -808,7 +808,7 @@ COMMON SHORTCUTS
 
 ---
  
-**Last Updated:** January 11, 2026
+**Last Updated:** January 11, 2026  
 **Developer:** Kartik (NullVoider)
 
 ---
