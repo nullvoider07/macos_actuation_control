@@ -716,12 +716,12 @@ class MacOSVMController:
 # Version display
 def show_version():
     """Show version information"""
-    print("=" * 72)
+    print("=" * 50)
     print(f"macOS Actuation Control v{__version__}")
-    print("=" * 72)
-    print(f"  * OS:          {platform.system()} {platform.release()}")
+    print("=" * 50)
+    print(f"  * OS: {platform.system()} {platform.release()}")
     print(f"  * Architecture: {platform.machine()}")
-    print("=" * 72)
+    print("=" * 50)
 
 # Update mechanism
 def update_tool(check_only: bool = False):
@@ -738,6 +738,8 @@ def update_tool(check_only: bool = False):
         latest_release = response.json()
         latest_tag = latest_release['tag_name']
         latest_version = latest_tag.lstrip('v')
+        cleaned_tag = latest_tag.replace('mac-', '')
+        latest_version = cleaned_tag.lstrip('v')
         
         print(f"    Latest version:  v{latest_version}")
         
