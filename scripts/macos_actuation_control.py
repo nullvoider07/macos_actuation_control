@@ -20,10 +20,11 @@ import stat
 import json
 import zipfile
 import tarfile
+import subprocess
 from pathlib import Path
 from typing import Optional, Tuple, List
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 REPO = "nullvoider07/macos_actuation_control"
 
 class MacOSVMController:
@@ -847,6 +848,56 @@ def update_tool(check_only: bool = False):
     except Exception as e:
         print(f"[✗] Update failed: {e}")
 
+# Uninstallation mechanism
+def uninstall_tool():
+    """Uninstall the tool from the system"""
+    print("=" * 50)
+    print("macOS Actuation Control - Uninstall")
+    print("=" * 50)
+    
+    # 1. Confirm intent
+    confirm = input("\nAre you sure you want to uninstall this tool? [y/N] ").strip().lower()
+    if confirm != 'y':
+        print("[*] Uninstall cancelled.")
+        return
+
+    # 2. Identify the file to remove
+    if getattr(sys, 'frozen', False):
+        target_path = Path(sys.executable).resolve()
+    else:
+        target_path = Path(__file__).resolve()
+
+    print(f"\n[*] Target: {target_path}")
+
+    try:
+        # 3. Perform removal
+        if platform.system().lower() == 'windows':
+            trash_path = target_path.with_suffix('.old_del')
+            
+            # Clean up previous debris if it exists
+            if trash_path.exists():
+                try: trash_path.unlink()
+                except: pass
+            
+            # Rename current executable
+            target_path.rename(trash_path)
+            
+            cmd = f'cmd /c ping 127.0.0.1 -n 3 > nul & del "{trash_path}"'
+            subprocess.Popen(cmd, shell=True)
+            
+            print("[✓] Uninstallation initiated.")
+            print("    The file will be removed automatically in a few seconds.")
+            
+        else:
+            target_path.unlink()
+            print("[✓] Uninstallation successful.")
+
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"[✗] Uninstall failed: {e}")
+        print(f"    Please delete '{target_path.name}' manually.")
+
 # Main entry point
 def main():
     """Main entry point"""
@@ -859,6 +910,9 @@ def main():
         elif sys.argv[1] == 'update':
             check_only = '--check-only' in sys.argv
             update_tool(check_only=check_only)
+            sys.exit(0)
+        elif sys.argv[1] == 'uninstall':
+            uninstall_tool()
             sys.exit(0)
     
     parser = argparse.ArgumentParser(description='macOS VM Control CLI')
