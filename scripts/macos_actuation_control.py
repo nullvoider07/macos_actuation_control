@@ -803,8 +803,9 @@ def update_tool(check_only: bool = False):
             with zipfile.ZipFile(temp_file, 'r') as zf:
                 zf.extractall(temp_dir)
         else:
+            import tarfile
             with tarfile.open(temp_file, 'r:gz') as tf:
-                tf.extractall(temp_dir)
+                tf.extractall(temp_dir, filter='data')
 
         # 7. Replace Binary
         binary_name = 'macos-actuation.exe' if os_name == 'win' else 'macos-actuation'
@@ -822,7 +823,38 @@ def update_tool(check_only: bool = False):
         current_exe_path = Path(current_exe).resolve()
 
         try:
-            if os_name == 'win':
+            if os_name != 'win':
+                update_script = current_exe_path.parent / '.update_script.sh'
+                
+                script_content = f"""#!/bin/bash
+sleep 1
+mv "{current_exe_path}" "{current_exe_path}.old" 2>/dev/null
+cp "{extracted_bin}" "{current_exe_path}"
+chmod +x "{current_exe_path}"
+rm -rf "{temp_dir}"
+rm -f "{update_script}"
+echo "[✓] Update completed! Please run the tool again."
+"""
+                
+                with open(update_script, 'w') as f:
+                    f.write(script_content)
+                
+                os.chmod(update_script, 0o755)
+                
+                print(f"\n[!] Binary is currently in use. Update will complete after exit.")
+                print(f"[*] Running update script in background...")
+                
+                # Launch update script in background
+                subprocess.Popen(['/bin/bash', str(update_script)], 
+                               start_new_session=True,
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
+                
+                print(f"[✓] Update will be applied when you exit this tool.")
+                print(f"    After exit, run: {current_exe_path.name} version")
+                
+            else:
+                # Windows approach (original)
                 old_exe = current_exe_path.with_suffix('.old')
                 if old_exe.exists():
                     try:
@@ -831,23 +863,26 @@ def update_tool(check_only: bool = False):
                         pass
                 
                 current_exe_path.rename(old_exe)
-                
                 shutil.copy2(extracted_bin, current_exe_path)
-                
-                if os_name != 'win':
-                    st = os.stat(current_exe_path)
-                    os.chmod(current_exe_path, st.st_mode | stat.S_IEXEC)
-                    
                 print(f"\n[✓] Successfully updated to v{latest_version}!")
                 print("[*] Please restart the tool.")
-            
+
+        except OSError as e:
+            if e.errno == 26:  # Text file busy
+                print(f"\n[!] Cannot replace binary while running.")
+                print(f"[*] Manual update instructions:")
+                print(f"    1. Exit this tool")
+                print(f"    2. Run: cp {extracted_bin} {current_exe_path}")
+                print(f"    3. Run: chmod +x {current_exe_path}")
+                print(f"    4. Cleanup: rm -rf {temp_dir}")
+            else:
+                raise
+                
         except Exception as e:
             print(f"[✗] Failed to replace binary: {e}")
-            if os_name == 'win':
-                print("[!] Note: On Windows, you might need to close the tool manually to update.")
-                
-        finally:
-            shutil.rmtree(temp_dir)
+            print(f"\n[*] Manual update instructions:")
+            print(f"    cp {extracted_bin} {current_exe_path}")
+            print(f"    chmod +x {current_exe_path}")
 
     except Exception as e:
         print(f"[✗] Update failed: {e}")
