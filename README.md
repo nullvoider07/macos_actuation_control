@@ -190,6 +190,11 @@ This automatically detects your OS, downloads the latest binary, and adds it to 
 **Option B: Manual Download**
 If you prefer, download the standalone binary for your OS directly from the [Releases Page](https://github.com/nullvoider07/macos_actuation_control/releases).
 
+**Option C: Uninstall (if needed)**
+```bash
+macos-acutation uninstall
+```
+
 ---
 
 ## Usage Modes
