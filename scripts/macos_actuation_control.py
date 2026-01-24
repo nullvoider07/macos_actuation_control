@@ -825,17 +825,21 @@ def update_tool(check_only: bool = False):
             if os_name == 'win':
                 old_exe = current_exe_path.with_suffix('.old')
                 if old_exe.exists():
-                    old_exe.unlink()
-                current_exe_path.rename(old_exe)
-            
-            shutil.copy2(extracted_bin, current_exe_path)
-            
-            if os_name != 'win':
-                st = os.stat(current_exe_path)
-                os.chmod(current_exe_path, st.st_mode | stat.S_IEXEC)
+                    try:
+                        old_exe.unlink()
+                    except OSError:
+                        pass
                 
-            print(f"\n[✓] Successfully updated to v{latest_version}!")
-            print("[*] Please restart the tool.")
+                current_exe_path.rename(old_exe)
+                
+                shutil.copy2(extracted_bin, current_exe_path)
+                
+                if os_name != 'win':
+                    st = os.stat(current_exe_path)
+                    os.chmod(current_exe_path, st.st_mode | stat.S_IEXEC)
+                    
+                print(f"\n[✓] Successfully updated to v{latest_version}!")
+                print("[*] Please restart the tool.")
             
         except Exception as e:
             print(f"[✗] Failed to replace binary: {e}")
